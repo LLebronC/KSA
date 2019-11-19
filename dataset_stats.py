@@ -1,7 +1,8 @@
 import json, os, numpy as np, random
 from sklearn.model_selection import StratifiedShuffleSplit, train_test_split
 from collections import Counter
-from sklearn.naive_bayes import MultinomialNB
+from sklearn.naive_bayes import MultinomialNB,GaussianNB,BernoulliNB
+from sklearn import svm
 from sklearn.metrics import *
 import nltk
 from nltk.corpus import stopwords
@@ -16,8 +17,10 @@ from nltk.tokenize import sent_tokenize, word_tokenize
 import gensim
 from gensim.models import Word2Vec
 
+import time
+
 test_split_size = 0.25
-MAX_WORDS = 20000
+MAX_WORDS = 100
 
 
 def split(base_path):
@@ -143,13 +146,27 @@ def extract_features(X_train, dictionary):
 # if __name__ == '__main__':
 base_path = 'dataset/'
 X_train, X_test, y_train, y_test = split(base_path)
-dictionary = make_Dictionary(X_train)
-features_matrix = extract_features(X_train, dictionary)
-# model=embed_words(X_train)
-clf = MultinomialNB()
-clf.fit(features_matrix, y_train)
-# a=main(X_train, X_test, y_train, y_test)
 
-test_matrix = extract_features(X_test, dictionary)
-result = clf.predict(test_matrix)
-print(accuracy_score(y_test,result))
+out_results=[]
+for model in ["MNB","GNB","BNB","SVM"]:
+ for MAX_WORDS in [100,300,600,1000,2000,3000]:
+    t1=time.time()
+    dictionary = make_Dictionary(X_train)
+    features_matrix = extract_features(X_train, dictionary)
+    if model=="MNB":
+        # model=embed_words(X_train)
+        clf = MultinomialNB()
+    elif model=="SVM":
+        clf = svm.SVC(gamma='scale')
+    elif model == "GNB":
+        clf = GaussianNB()
+    elif model == "BNB":
+        clf = BernoulliNB()
+    clf.fit(features_matrix, y_train)
+    # a=main(X_train, X_test, y_train, y_test)
+
+    test_matrix = extract_features(X_test, dictionary)
+    result = clf.predict(test_matrix)
+    print(accuracy_score(y_test,result))
+    t2=time.time()
+    out_results.append([model,MAX_WORDS,accuracy_score(y_test,result),t2-t1])
