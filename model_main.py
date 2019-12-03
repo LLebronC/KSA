@@ -18,7 +18,7 @@ from nltk.tokenize import sent_tokenize, word_tokenize
 import gensim
 from gensim.models import Word2Vec
 
-from tools import split
+from tools import split,make_Dictionary
 import config
 
 import pickle
@@ -43,6 +43,8 @@ def embed_words(X):
 
 
 def make_Dictionary(X_train,Max_Words):
+    nltk.download('stopwords')
+    s_words = set(stopwords.words('english'))
     all_words = []
     for line in X_train:
         all_words += line.split()

@@ -2,6 +2,23 @@ import json, os, numpy as np, random
 import config
 
 from sklearn.model_selection import StratifiedShuffleSplit, train_test_split
+import nltk
+from nltk.corpus import stopwords
+
+from collections import Counter
+
+def make_Dictionary(X_train,Max_Words):
+    nltk.download('stopwords')
+    s_words = set(stopwords.words('english'))
+    all_words = []
+    for line in X_train:
+        all_words += line.split()
+    all_words = filter(lambda wor: not wor in s_words, all_words)
+    dictionary = Counter(all_words)
+    dictionary = dictionary.most_common(Max_Words)
+    return dictionary
+
+
 
 
 def split(base_path):
@@ -28,4 +45,3 @@ def split(base_path):
 
         json.dump(f, open(os.path.join(base_path, 'dataset.json'), 'w'))
     return X_train, X_test, y_train, y_test
-
