@@ -2,17 +2,12 @@ import time
 import json, os, numpy as np, random
 
 from sklearn.naive_bayes import MultinomialNB,GaussianNB,BernoulliNB
+from sklearn.model_selection import GridSearchCV
 from sklearn import svm
 
 from sklearn.metrics import *
 from sklearn.model_selection import KFold
 from collections import Counter
-
-import nltk
-from nltk.corpus import stopwords
-
-nltk.download('stopwords')
-s_words = set(stopwords.words('english'))
 
 from nltk.tokenize import sent_tokenize, word_tokenize
 import gensim
@@ -42,18 +37,6 @@ def embed_words(X):
     return model1
 
 
-def make_Dictionary(X_train,Max_Words):
-    nltk.download('stopwords')
-    s_words = set(stopwords.words('english'))
-    all_words = []
-    for line in X_train:
-        all_words += line.split()
-    all_words = filter(lambda wor: not wor in s_words, all_words)
-    dictionary = Counter(all_words)
-    dictionary = dictionary.most_common(Max_Words)
-    return dictionary
-
-
 def extract_features(X_train, dictionary,Max_Words):
     features_matrix = np.zeros((len(X_train), Max_Words))
     docID = 0;
@@ -72,35 +55,42 @@ def extract_features(X_train, dictionary,Max_Words):
 
 X, X_test, y, y_test = split(config.base_path)
 
-
-kf = KFold(n_splits=5)
+n_fold=5
+kf = KFold(n_splits=n_fold)
 count_folds=0
 out_results=[]
-for train_index, val_index in kf.split(X):
-    X_train, X_val = [X[index_tx] for index_tx in train_index], [X[index_vx] for index_vx in val_index]
-    y_train, y_val = [y[index_ty] for index_ty in train_index], [y[index_vy] for index_vy in val_index]
+for model in ["MNB", "GNB", "BNB", "SVM"]:
+    for Max_Words in [100, 300, 600, 1000, 2000, 3000, 20000]:
+        metric=0
+        t1 = time.time()
+        for train_index, val_index in kf.split(X):
+            X_train, X_val = [X[index_tx] for index_tx in train_index], [X[index_vx] for index_vx in val_index]
+            y_train, y_val = [y[index_ty] for index_ty in train_index], [y[index_vy] for index_vy in val_index]
 
-    for model in ["MNB","GNB","BNB","SVM"]:
-     for Max_Words in [100,300,600,1000,2000,3000,20000]:
-        t1=time.time()
-        dictionary = make_Dictionary(X_train,Max_Words)
-        features_matrix = extract_features(X_train, dictionary,Max_Words)
-        if model=="MNB":
-            # model=embed_words(X_train)
-            clf = MultinomialNB()
-        elif model=="SVM":
-            clf = svm.SVC(gamma='scale')
-        elif model == "GNB":
-            clf = GaussianNB()
-        elif model == "BNB":
-            clf = BernoulliNB()
-        clf.fit(features_matrix, y_train)
 
-        pickle.dump(clf,open(os.path.join('models',str(count_folds)+model+str(Max_Words)+'.dmp'),'wb'))
-        val_matrix = extract_features(X_val, dictionary,Max_Words)
-        result = clf.predict(val_matrix)
-        print(accuracy_score(y_val,result))
+
+            dictionary = make_Dictionary(X_train,Max_Words)
+            features_matrix = extract_features(X_train, dictionary,Max_Words)
+            if model=="MNB":
+                # model=embed_words(X_train)
+                clf = MultinomialNB()
+            elif model=="SVM":
+                param_grid = [
+                    {'C': [1, 10, 100, 1000], 'kernel': ['linear']},
+                    {'C': [1, 10, 100, 1000], 'gamma': [0.001, 0.0001], 'kernel': ['rbf']},
+                ]
+                clf = svm.SVC(gamma='scale')
+                search = GridSearchCV(svm.SVC, param_grid, cv=5)
+            elif model == "GNB":
+                clf = GaussianNB()
+            elif model == "BNB":
+                clf = BernoulliNB()
+            clf.fit(features_matrix, y_train)
+
+            pickle.dump(clf,open(os.path.join('models',str(count_folds)+model+str(Max_Words)+'.dmp'),'wb'))
+            val_matrix = extract_features(X_val, dictionary,Max_Words)
+            result = clf.predict(val_matrix)
+            metric+=accuracy_score(y_val,result)
         t2=time.time()
-        out_results.append([count_folds,model,Max_Words,accuracy_score(y_val,result),t2-t1])
-        count_folds+=1
+        out_results.append([model,Max_Words,metric/n_fold,(t2-t1)/n_fold])
 json.dump(out_results,open(os.path.join('models','results.json'),'w'))

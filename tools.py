@@ -7,9 +7,11 @@ from nltk.corpus import stopwords
 
 from collections import Counter
 
+nltk.download('stopwords')
+s_words = set(stopwords.words('english'))
+
 def make_Dictionary(X_train,Max_Words):
-    nltk.download('stopwords')
-    s_words = set(stopwords.words('english'))
+
     all_words = []
     for line in X_train:
         all_words += line.split()
