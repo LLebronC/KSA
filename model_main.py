@@ -1,7 +1,7 @@
 import time
 import json, os, numpy as np, random
 
-from sklearn.naive_bayes import MultinomialNB,GaussianNB,BernoulliNB
+from sklearn.naive_bayes import MultinomialNB, GaussianNB, BernoulliNB
 from sklearn.model_selection import GridSearchCV
 from sklearn import svm
 
@@ -12,10 +12,11 @@ from nltk.tokenize import sent_tokenize, word_tokenize
 import gensim
 from gensim.models import Word2Vec
 import matplotlib.pyplot as plt
-from tools import split,make_Dictionary
+from tools import split, make_Dictionary
 import config
 
 import pickle
+
 
 def embed_words(X):
     data = []
@@ -36,7 +37,7 @@ def embed_words(X):
     return model1
 
 
-def extract_features(X_train, dictionary,Max_Words):
+def extract_features(X_train, dictionary, Max_Words):
     features_matrix = np.zeros((len(X_train), Max_Words))
     docID = 0;
     for line in X_train:
@@ -50,54 +51,59 @@ def extract_features(X_train, dictionary,Max_Words):
         docID = docID + 1
     return features_matrix
 
+
 # if __name__ == '__main__':
 
 X, X_test, y, y_test = split(config.base_path)
 
-n_fold=5
+n_fold = 5
 kf = KFold(n_splits=n_fold)
-count_folds=0
-out_results=[]
-for model in ["MNB"]:# ["MNB", "GNB", "BNB", "SVM"]:
+count_folds = 0
+out_results = []
+for model in ["MNB"]:  # ["MNB", "GNB", "BNB", "SVM"]:
     for Max_Words in [100, 300, 600, 1000, 2000, 3000, 20000]:
-        metric=0
+        metric = 0
         t1 = time.time()
         # for train_index, val_index in kf.split(X):
-            # X_train, X_val = [X[index_tx] for index_tx in train_index], [X[index_vx] for index_vx in val_index]
-            # y_train, y_val = [y[index_ty] for index_ty in train_index], [y[index_vy] for index_vy in val_index]
+        # X_train, X_val = [X[index_tx] for index_tx in train_index], [X[index_vx] for index_vx in val_index]
+        # y_train, y_val = [y[index_ty] for index_ty in train_index], [y[index_vy] for index_vy in val_index]
 
-
-
-        dictionary = make_Dictionary(X,Max_Words)
-        features_matrix = extract_features(X, dictionary,Max_Words)
-        if model=="MNB":
-            # model=embed_words(X_train)
-            clf = MultinomialNB()
-            clf = GridSearchCV(estimator=clf, param_grid=[], cv=5)
-        elif model=="SVM":
+        dictionary = make_Dictionary(X, Max_Words)
+        features_matrix = extract_features(X, dictionary, Max_Words)
+        if model == "MNB":
             param_grid = [
-                {'C': [1, 5,10], 'gamma': [0.001, 0.0001], 'kernel': ['rbf']},
+                {'alpha': [0, 0.5, 1]},
             ]
-            # clf = svm.SVC(gamma='scale')
-            clf = GridSearchCV(estimator=svm.SVC(),param_grid=param_grid,cv=5)
+            clf = MultinomialNB()
+        elif model == "SVM":
+            param_grid = [
+                {'C': [1, 5, 10], 'gamma': [0.001, 0.0001], 'kernel': ['rbf']},
+            ]
+            clf = svm.SVC()
+
         elif model == "GNB":
+            param_grid = [
+                {'var_smoothing': [1e-12, 1e-9, 1e-6]},
+            ]
             clf = GaussianNB()
-            clf = GridSearchCV(estimator=clf, param_grid=[], cv=5)
         elif model == "BNB":
+            param_grid = [
+                {'alpha': [0, 0.5, 1]},
+            ]
             clf = BernoulliNB()
-            clf = GridSearchCV(estimator=clf, param_grid=[], cv=5)
+        clf = GridSearchCV(estimator=clf, param_grid=param_grid, cv=5)
         clf.fit(features_matrix, y)
 
-        pickle.dump(clf,open(os.path.join('models',str(count_folds)+model+str(Max_Words)+'_svm.dmp'),'wb'))
+        pickle.dump(clf, open(os.path.join('models', str(count_folds) + model + str(Max_Words) + '_svm.dmp'), 'wb'))
         # val_matrix = extract_features(X_val, dictionary,Max_Words)
         # result = clf.predict(val_matrix)
         # metric+=accuracy_score(y_val,result)
         # out_results.append([model,Max_Words,metric,sorted(clf.cv_results_.keys())])
-        t2=time.time()
-        out_results.append([model,Max_Words,sorted(clf.cv_results_.keys())])
-json.dump(out_results,open(os.path.join('models','results_svm.json'),'w'))
+        t2 = time.time()
+        out_results.append([model, Max_Words, sorted(clf.cv_results_.keys())])
+json.dump(out_results, open(os.path.join('models', 'results_svm.json'), 'w'))
 
-best_model=clf
+best_model = clf
 y_score = best_model.predict(X_test)
 
 fpr, tpr, thresholds = roc_curve(y_test, y_score)
@@ -110,6 +116,5 @@ plt.xlabel('False Positive Rate or (1 - Specifity)')
 plt.ylabel('True Positive Rate or (Sensitivity)')
 plt.title('Receiver Operating Characteristic')
 plt.legend(loc="lower right")
-
 
 confusion_matrix(y_test, y_score)
