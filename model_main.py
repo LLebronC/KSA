@@ -8,11 +8,10 @@ from sklearn import svm
 from sklearn.metrics import *
 from sklearn.model_selection import KFold
 from collections import Counter
-
 from nltk.tokenize import sent_tokenize, word_tokenize
 import gensim
 from gensim.models import Word2Vec
-
+import matplotlib.pyplot as plt
 from tools import split,make_Dictionary
 import config
 
@@ -59,7 +58,7 @@ n_fold=5
 kf = KFold(n_splits=n_fold)
 count_folds=0
 out_results=[]
-for model in ["SVM"]:# ["MNB", "GNB", "BNB", "SVM"]:
+for model in ["MNB"]:# ["MNB", "GNB", "BNB", "SVM"]:
     for Max_Words in [100, 300, 600, 1000, 2000, 3000, 20000]:
         metric=0
         t1 = time.time()
@@ -97,3 +96,20 @@ for model in ["SVM"]:# ["MNB", "GNB", "BNB", "SVM"]:
         t2=time.time()
         out_results.append([model,Max_Words,sorted(clf.cv_results_.keys())])
 json.dump(out_results,open(os.path.join('models','results_svm.json'),'w'))
+
+best_model=clf
+y_score = best_model.predict(X_test)
+
+fpr, tpr, thresholds = roc_curve(y_test, y_score)
+roc_auc = auc(y_test, y_score)
+plt.plot(fpr, tpr, label='ROC curve (area = %0.3f)' % roc_auc)
+plt.plot([0, 1], [0, 1], 'k--')  # random predictions curve
+plt.xlim([0.0, 1.0])
+plt.ylim([0.0, 1.0])
+plt.xlabel('False Positive Rate or (1 - Specifity)')
+plt.ylabel('True Positive Rate or (Sensitivity)')
+plt.title('Receiver Operating Characteristic')
+plt.legend(loc="lower right")
+
+
+confusion_matrix(y_test, y_score)
