@@ -130,7 +130,7 @@ device = torch.device("cuda")
 
 model = LSTMModel(in_size,100,1,2)
 
-lr=0.001
+lr=0.000001
 criterion = nn.CrossEntropyLoss()
 optimizer = torch.optim.Adam(model.parameters(), lr=lr)
 
@@ -138,7 +138,7 @@ optimizer = torch.optim.Adam(model.parameters(), lr=lr)
 
 total = target_seq.size(0)
 total_val = target_seq_val.size(0)
-n_epochs=100
+n_epochs=100000
 for epoch in range(1, n_epochs + 1):
     optimizer.zero_grad()  # Clears existing gradients from previous epoch
     input_seq.to(device)

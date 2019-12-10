@@ -59,38 +59,41 @@ n_fold=5
 kf = KFold(n_splits=n_fold)
 count_folds=0
 out_results=[]
-for model in ["MNB", "GNB", "BNB", "SVM"]:
+for model in ["SVM"]:# ["MNB", "GNB", "BNB", "SVM"]:
     for Max_Words in [100, 300, 600, 1000, 2000, 3000, 20000]:
         metric=0
         t1 = time.time()
-        for train_index, val_index in kf.split(X):
-            X_train, X_val = [X[index_tx] for index_tx in train_index], [X[index_vx] for index_vx in val_index]
-            y_train, y_val = [y[index_ty] for index_ty in train_index], [y[index_vy] for index_vy in val_index]
+        # for train_index, val_index in kf.split(X):
+            # X_train, X_val = [X[index_tx] for index_tx in train_index], [X[index_vx] for index_vx in val_index]
+            # y_train, y_val = [y[index_ty] for index_ty in train_index], [y[index_vy] for index_vy in val_index]
 
 
 
-            dictionary = make_Dictionary(X_train,Max_Words)
-            features_matrix = extract_features(X_train, dictionary,Max_Words)
-            if model=="MNB":
-                # model=embed_words(X_train)
-                clf = MultinomialNB()
-            elif model=="SVM":
-                param_grid = [
-                    {'C': [1, 10, 100, 1000], 'kernel': ['linear']},
-                    {'C': [1, 10, 100, 1000], 'gamma': [0.001, 0.0001], 'kernel': ['rbf']},
-                ]
-                clf = svm.SVC(gamma='scale')
-                search = GridSearchCV(svm.SVC, param_grid, cv=5)
-            elif model == "GNB":
-                clf = GaussianNB()
-            elif model == "BNB":
-                clf = BernoulliNB()
-            clf.fit(features_matrix, y_train)
+        dictionary = make_Dictionary(X,Max_Words)
+        features_matrix = extract_features(X, dictionary,Max_Words)
+        if model=="MNB":
+            # model=embed_words(X_train)
+            clf = MultinomialNB()
+            clf = GridSearchCV(estimator=clf, param_grid=[], cv=5)
+        elif model=="SVM":
+            param_grid = [
+                {'C': [1, 5,10], 'gamma': [0.001, 0.0001], 'kernel': ['rbf']},
+            ]
+            # clf = svm.SVC(gamma='scale')
+            clf = GridSearchCV(estimator=svm.SVC(),param_grid=param_grid,cv=5)
+        elif model == "GNB":
+            clf = GaussianNB()
+            clf = GridSearchCV(estimator=clf, param_grid=[], cv=5)
+        elif model == "BNB":
+            clf = BernoulliNB()
+            clf = GridSearchCV(estimator=clf, param_grid=[], cv=5)
+        clf.fit(features_matrix, y)
 
-            pickle.dump(clf,open(os.path.join('models',str(count_folds)+model+str(Max_Words)+'.dmp'),'wb'))
-            val_matrix = extract_features(X_val, dictionary,Max_Words)
-            result = clf.predict(val_matrix)
-            metric+=accuracy_score(y_val,result)
+        pickle.dump(clf,open(os.path.join('models',str(count_folds)+model+str(Max_Words)+'_svm.dmp'),'wb'))
+        # val_matrix = extract_features(X_val, dictionary,Max_Words)
+        # result = clf.predict(val_matrix)
+        # metric+=accuracy_score(y_val,result)
+        # out_results.append([model,Max_Words,metric,sorted(clf.cv_results_.keys())])
         t2=time.time()
-        out_results.append([model,Max_Words,metric/n_fold,(t2-t1)/n_fold])
-json.dump(out_results,open(os.path.join('models','results.json'),'w'))
+        out_results.append([model,Max_Words,sorted(clf.cv_results_.keys())])
+json.dump(out_results,open(os.path.join('models','results_svm.json'),'w'))
