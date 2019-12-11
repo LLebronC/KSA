@@ -55,7 +55,7 @@ def main(X_train, X_test, y_train, y_test):
     # plt.show()
 
     k_sar = Counter(dic_words_sar)
-    more_use_words_sar = k_sar.most_common(10)
+    more_use_words_sar = k_sar.most_common(20)
     plt.figure()
     plt.bar(np.arange(len(more_use_words_sar)), [dic_words_sar[word[0]] for word in more_use_words_sar], width=w,
             color='b', align='center', label='The Onion')
@@ -67,7 +67,7 @@ def main(X_train, X_test, y_train, y_test):
     plt.show()
 
     k_nsar = Counter(dic_words_nsar)
-    more_use_words_nsar = k_nsar.most_common(10)
+    more_use_words_nsar = k_nsar.most_common(20)
     plt.figure()
     plt.bar(np.arange(len(more_use_words_nsar)),
             [dic_words_sar[word[0]] if word[0] in dic_words_sar.keys() else 0 for word in more_use_words_nsar], width=w,

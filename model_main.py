@@ -61,7 +61,7 @@ kf = KFold(n_splits=n_fold)
 count_folds = 0
 out_results = []
 for model in ["MNB"]:  # ["MNB", "GNB", "BNB", "SVM"]:
-    for Max_Words in [100, 300, 600, 1000, 2000, 3000, 20000]:
+    for Max_Words in [100, 300, 600, 1000, 3000, 20000]:
         metric = 0
         t1 = time.time()
         # for train_index, val_index in kf.split(X):
@@ -72,7 +72,7 @@ for model in ["MNB"]:  # ["MNB", "GNB", "BNB", "SVM"]:
         features_matrix = extract_features(X, dictionary, Max_Words)
         if model == "MNB":
             param_grid = [
-                {'alpha': [0, 0.5, 1]},
+                {'alpha': [0.001, 0.5, 1]},
             ]
             clf = MultinomialNB()
         elif model == "SVM":
@@ -83,15 +83,15 @@ for model in ["MNB"]:  # ["MNB", "GNB", "BNB", "SVM"]:
 
         elif model == "GNB":
             param_grid = [
-                {'var_smoothing': [1e-12, 1e-9, 1e-6]},
+                {'var_smoothing': [1e-10, 1e-8, 1e-5]},
             ]
             clf = GaussianNB()
         elif model == "BNB":
             param_grid = [
-                {'alpha': [0, 0.5, 1]},
+                {'alpha': [0.001, 0.5, 1]},
             ]
             clf = BernoulliNB()
-        clf = GridSearchCV(estimator=clf, param_grid=param_grid, cv=5)
+        clf = GridSearchCV(estimator=clf, param_grid=param_grid, cv=5,scoring=['accuracy', 'precision','recall'],refit='accuracy')
         clf.fit(features_matrix, y)
 
         pickle.dump(clf, open(os.path.join('models', str(count_folds) + model + str(Max_Words) + '_svm.dmp'), 'wb'))
@@ -100,7 +100,7 @@ for model in ["MNB"]:  # ["MNB", "GNB", "BNB", "SVM"]:
         # metric+=accuracy_score(y_val,result)
         # out_results.append([model,Max_Words,metric,sorted(clf.cv_results_.keys())])
         t2 = time.time()
-        out_results.append([model, Max_Words, sorted(clf.cv_results_.keys())])
+        out_results.append([model, Max_Words, sorted(clf.cv_results_)])
 json.dump(out_results, open(os.path.join('models', 'results_svm.json'), 'w'))
 
 best_model = clf
