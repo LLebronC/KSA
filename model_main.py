@@ -18,6 +18,9 @@ import config
 import pickle
 
 
+from sklearn.feature_extraction.text import TfidfVectorizer
+
+
 def embed_words(X):
     data = []
 
@@ -53,7 +56,7 @@ def extract_features(X_train, dictionary, Max_Words):
 
 
 if __name__ == '__main__':
-
+    feature="tdidf"
     X, X_test, y, y_test = split(config.base_path)
 
     n_fold = 5
@@ -62,12 +65,15 @@ if __name__ == '__main__':
     out_results = []
     for model in ["MNB", "GNB", "BNB", "SVM"]:
         if model != "SVM":
-            for Max_Words in [100, 300, 600, 1000, 3000, 20000]:
+            for Max_Words in [100, 300, 600, 1000, 3000, None]:
                 metric = 0
                 t1 = time.time()
-
-                dictionary = make_Dictionary(X, Max_Words)
-                features_matrix = extract_features(X, dictionary, Max_Words)
+                if feature=="tdidf":
+                    vectorizer = TfidfVectorizer(stop_words='english',lowercase=True,max_features=Max_Words)
+                    features_matrix = vectorizer.fit_transform(X)
+                else
+                    dictionary = make_Dictionary(X, Max_Words)
+                    features_matrix = extract_features(X, dictionary, Max_Words)
                 if model == "MNB":
                     param_grid = [
                         {'alpha': [0.001, 0.5, 1]},
@@ -95,8 +101,12 @@ if __name__ == '__main__':
                 metric = 0
                 t1 = time.time()
 
-                dictionary = make_Dictionary(X, Max_Words)
-                features_matrix = extract_features(X, dictionary, Max_Words)
+                if feature=="tdidf":
+                    vectorizer = TfidfVectorizer(stop_words='english',lowercase=True,max_features=Max_Words)
+                    features_matrix = vectorizer.fit_transform(X)
+                else
+                    dictionary = make_Dictionary(X, Max_Words)
+                    features_matrix = extract_features(X, dictionary, Max_Words)
 
                 param_grid = [
                     {'C': [1, 5, 10], 'gamma': [0.001, 0.0001], 'kernel': ['rbf']},
@@ -105,16 +115,24 @@ if __name__ == '__main__':
                 clf = GridSearchCV(estimator=clf, param_grid=param_grid, cv=5,scoring=['accuracy', 'precision','recall','f1','balanced_accuracy'],refit='accuracy')
                 clf.fit(features_matrix, y)
 
-                pickle.dump(clf, open(os.path.join('models', str(count_folds) + model + str(Max_Words) + '_svm.dmp'), 'wb'))
+                pickle.dump(clf, open(os.path.join('models', str(count_folds) + model + str(Max_Words) + '_tdidf.dmp'), 'wb'))
 
                 t2 = time.time()
-                out_results.append([model, Max_Words, clf.cv_results_,os.path.join('models', str(count_folds) + model + str(Max_Words) + '_svm.dmp')])
-        pickle.dump(out_results, open(os.path.join('models', 'results_all.pk'), 'wb'))
+                out_results.append([model, Max_Words, clf.cv_results_,os.path.join('models', str(count_folds) + model + str(Max_Words) + '_tdidf.dmp')])
+        pickle.dump(out_results, open(os.path.join('models', 'results_tdidf.pk'), 'wb'))
 
     max_accuracy_model=np.argmax([max(x[2]['mean_test_accuracy']) for x in out_results])
     best_model = pickle.load(open(out_results[max_accuracy_model][3],'rb'))
-    dictionary = make_Dictionary(X, out_results[max_accuracy_model][1])
-    features_test = extract_features(X_test, dictionary, out_results[max_accuracy_model][1])
+
+    if feature == "tdidf":
+        vectorizer = TfidfVectorizer(stop_words='english', lowercase=True,max_features=out_results[max_accuracy_model][1])
+        features_matrix = vectorizer.fit_transform(X)
+        features_test = vectorizer.transform(X_test)
+
+    else
+        dictionary = make_Dictionary(X, out_results[max_accuracy_model][1])
+        features_test = extract_features(X_test, dictionary, out_results[max_accuracy_model][1])
+
     y_score = best_model.predict_proba(features_test)
 
     fpr, tpr, thresholds = roc_curve(y_test, y_score[:, 1])
