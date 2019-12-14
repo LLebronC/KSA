@@ -14,7 +14,12 @@ plt.style.use('seaborn-deep')
 from tools import split
 import config
 
+import matplotlib
 
+font = {'family' : 'normal',
+        'size'   : 20}
+
+matplotlib.rc('font', **font)
 
 def main(X_train, X_test, y_train, y_test):
     dic_words_sar = {}
@@ -79,7 +84,7 @@ def main(X_train, X_test, y_train, y_test):
     plt.xticks(np.arange(len(more_use_words_nsar)), [x[0] for x in more_use_words_nsar])
     plt.show()
 
-    return dic_to_add
+    return [common_words,words_only_sar,words_only_nsar]
 
 
 
