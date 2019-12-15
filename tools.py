@@ -9,7 +9,7 @@ from collections import Counter
 
 nltk.download('stopwords')
 s_words = set(stopwords.words('english'))
-
+#creat the dictionari of the Max_Words most used words removing common words
 def make_Dictionary(X_train,Max_Words):
 
     all_words = []
@@ -22,7 +22,7 @@ def make_Dictionary(X_train,Max_Words):
 
 
 
-
+# create or load train and test split
 def split(base_path):
     if os.path.exists(os.path.join(base_path, 'dataset.json')):
         f = json.load(open(os.path.join(base_path, 'dataset.json'), 'r'))

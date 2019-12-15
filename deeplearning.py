@@ -1,18 +1,15 @@
 import torch
 import torch.nn as nn
 import torch.utils.data
-from torch.autograd import Variable
 import numpy as np
-from gensim.models import Word2Vec
 
 from collections import Counter
 
 from tools import split
 import config
 import time
-from nltk.tokenize import sent_tokenize, word_tokenize
+from nltk.tokenize import  word_tokenize
 import gensim
-from gensim.models import Word2Vec
 
 import nltk
 from nltk.corpus import stopwords
@@ -100,18 +97,19 @@ class LSTMModel(nn.Module):
         out = self.fc(out[:, -1, :])
         # out.size() --> 100, 10
         return out
-
+#maximum length of the sentences
 in_size = 10
 
 X, X_test, y, y_test = split(config.base_path)
-
+#created the dictionary
 dictionary = make_Dictionary(X,3000)
+#convert from sentences to word2id
 features_matrix = extract_features(X, dictionary,in_size)
 
-
+#use the same dictionary for test/validation
 features_matrix_val = extract_features(X_test, dictionary,in_size)
 
-
+#convert to torch input and output
 input_seq = torch.from_numpy(np.expand_dims(features_matrix, axis=1))
 target_seq = torch.Tensor(np.array(y)).long()
 
@@ -122,9 +120,10 @@ target_seq_val= torch.Tensor(np.array(y_test)).long()
 device = torch.device("cuda")
 
 
-
+#create a simple LSTM with 100 hidden dimensions and a binary classifier
 model = LSTMModel(in_size,100,1,2)
 
+#loss function
 lr=0.001
 criterion = nn.CrossEntropyLoss()
 optimizer = torch.optim.Adam(model.parameters(), lr=lr)
@@ -133,8 +132,10 @@ optimizer = torch.optim.Adam(model.parameters(), lr=lr)
 
 total = target_seq.size(0)
 total_val = target_seq_val.size(0)
+#only stopping criterion; number of epoch
 n_epochs=1000
 t1=time.time()
+#main loop
 for epoch in range(1, n_epochs + 1):
     optimizer.zero_grad()  # Clears existing gradients from previous epoch
     input_seq.to(device)
@@ -153,6 +154,7 @@ for epoch in range(1, n_epochs + 1):
 
     print('Epoch: {}/{}.............'.format(epoch, n_epochs), end=' ')
     print("Loss: {:.4f}".format(loss.item()))
+    #print accuracy from train and validation
     print("Accuracy_train: {}".format(float(tp)/total))
     print("Accuracy_val: {}".format(float(tp_val)/total_val))
 print(time.time()-t1)
