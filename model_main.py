@@ -19,7 +19,7 @@ import pickle
 
 
 from sklearn.feature_extraction.text import TfidfVectorizer
-
+import seaborn as sn
 
 def embed_words(X):
     data = []
@@ -56,7 +56,7 @@ def extract_features(X_train, dictionary, Max_Words):
 
 
 if __name__ == '__main__':
-    feature="tdidf"
+    feature=config.features
     X, X_test, y, y_test = split(config.base_path)
 
     n_fold = 5
@@ -71,7 +71,8 @@ if __name__ == '__main__':
                 if feature=="tdidf":
                     vectorizer = TfidfVectorizer(stop_words='english',lowercase=True,max_features=Max_Words)
                     features_matrix = vectorizer.fit_transform(X)
-                else
+                    features_matrix = features_matrix.toarray()
+                else:
                     dictionary = make_Dictionary(X, Max_Words)
                     features_matrix = extract_features(X, dictionary, Max_Words)
                 if model == "MNB":
@@ -90,7 +91,7 @@ if __name__ == '__main__':
                     ]
                     clf = BernoulliNB()
                 clf = GridSearchCV(estimator=clf, param_grid=param_grid, cv=5,scoring=['accuracy', 'precision','recall','f1','balanced_accuracy'],refit='accuracy')
-                clf.fit(features_matrix, y)
+                clf.fit(features_matrix.toarray(), y)
 
                 pickle.dump(clf, open(os.path.join('models', str(count_folds) + model + str(Max_Words) + '_svm.dmp'), 'wb'))
 
@@ -104,9 +105,11 @@ if __name__ == '__main__':
                 if feature=="tdidf":
                     vectorizer = TfidfVectorizer(stop_words='english',lowercase=True,max_features=Max_Words)
                     features_matrix = vectorizer.fit_transform(X)
-                else
+                    features_matrix = features_matrix.toarray()
+                else:
                     dictionary = make_Dictionary(X, Max_Words)
                     features_matrix = extract_features(X, dictionary, Max_Words)
+
 
                 param_grid = [
                     {'C': [1, 5, 10], 'gamma': [0.001, 0.0001], 'kernel': ['rbf']},
@@ -128,13 +131,19 @@ if __name__ == '__main__':
         vectorizer = TfidfVectorizer(stop_words='english', lowercase=True,max_features=out_results[max_accuracy_model][1])
         features_matrix = vectorizer.fit_transform(X)
         features_test = vectorizer.transform(X_test)
+        features_matrix = features_matrix.toarray()
 
-    else
+    else:
         dictionary = make_Dictionary(X, out_results[max_accuracy_model][1])
         features_test = extract_features(X_test, dictionary, out_results[max_accuracy_model][1])
 
     y_score = best_model.predict_proba(features_test)
 
+    metrics={
+        'accuracy_score':accuracy_score(y_test,np.argmax(y_score,axis=1)),
+        'balanced_accuracy_score': balanced_accuracy_score(y_test, np.argmax(y_score, axis=1)),
+        'precision_recall_fscore_support': precision_recall_fscore_support(y_test, np.argmax(y_score, axis=1),average='micro')}
+    print(metrics)
     fpr, tpr, thresholds = roc_curve(y_test, y_score[:, 1])
     roc_auc = auc(fpr, tpr)
     plt.plot(fpr, tpr, label='ROC curve (area = %0.3f)' % roc_auc)
@@ -146,4 +155,5 @@ if __name__ == '__main__':
     plt.title('Receiver Operating Characteristic')
     plt.legend(loc="lower right")
 
-    confusion_matrix(y_test, y_score)
+    cm=confusion_matrix(y_test,np.argmax(y_score,axis=1))
+    sn.heatmap(cm, xticklabels=['no sarcastic','sarcastic'],yticklabels=['no sarcastic','sarcastic'], cmap="YlGnBu")

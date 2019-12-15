@@ -14,7 +14,7 @@ classes_no = 2
 
 from tools import split
 import config
-
+import time
 from nltk.tokenize import sent_tokenize, word_tokenize
 import gensim
 from gensim.models import Word2Vec
@@ -130,7 +130,7 @@ device = torch.device("cuda")
 
 model = LSTMModel(in_size,100,1,2)
 
-lr=0.000001
+lr=0.001
 criterion = nn.CrossEntropyLoss()
 optimizer = torch.optim.Adam(model.parameters(), lr=lr)
 
@@ -138,7 +138,8 @@ optimizer = torch.optim.Adam(model.parameters(), lr=lr)
 
 total = target_seq.size(0)
 total_val = target_seq_val.size(0)
-n_epochs=100000
+n_epochs=1000
+t1=time.time()
 for epoch in range(1, n_epochs + 1):
     optimizer.zero_grad()  # Clears existing gradients from previous epoch
     input_seq.to(device)
@@ -159,3 +160,4 @@ for epoch in range(1, n_epochs + 1):
     print("Loss: {:.4f}".format(loss.item()))
     print("Accuracy_train: {}".format(float(tp)/total))
     print("Accuracy_val: {}".format(float(tp_val)/total_val))
+print(time.time()-t1)
