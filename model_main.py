@@ -1,14 +1,12 @@
 import time
-import json, os, numpy as np, random
+import  os, numpy as np
 
 from sklearn.naive_bayes import MultinomialNB, GaussianNB, BernoulliNB
 from sklearn.model_selection import GridSearchCV
 from sklearn import svm
 
 from sklearn.metrics import *
-from sklearn.model_selection import KFold
-from collections import Counter
-from nltk.tokenize import sent_tokenize, word_tokenize
+from nltk.tokenize import  word_tokenize
 import gensim
 from gensim.models import Word2Vec
 import matplotlib.pyplot as plt
@@ -59,13 +57,10 @@ if __name__ == '__main__':
     feature=config.features
     X, X_test, y, y_test = split(config.base_path)
 
-    n_fold = 5
-    kf = KFold(n_splits=n_fold)
-    count_folds = 0
     out_results = []
     for model in ["MNB", "GNB", "BNB", "SVM"]:
         if model != "SVM":
-            for Max_Words in [100, 300, 600, 1000, 3000, None]:
+            for Max_Words in [100, 300, 600, 1000, 3000, 20000]:
                 metric = 0
                 t1 = time.time()
                 if feature=="tdidf":
@@ -91,9 +86,9 @@ if __name__ == '__main__':
                     ]
                     clf = BernoulliNB()
                 clf = GridSearchCV(estimator=clf, param_grid=param_grid, cv=5,scoring=['accuracy', 'precision','recall','f1','balanced_accuracy'],refit='accuracy')
-                clf.fit(features_matrix.toarray(), y)
+                clf.fit(features_matrix., y)
 
-                pickle.dump(clf, open(os.path.join('models', str(count_folds) + model + str(Max_Words) + '_svm.dmp'), 'wb'))
+                pickle.dump(clf, open(os.path.join('models', str(count_folds) + model + str(Max_Words) + '.dmp'), 'wb'))
 
                 t2 = time.time()
                 out_results.append([model, Max_Words, clf.cv_results_,os.path.join('models', str(count_folds) + model + str(Max_Words) + '_svm.dmp')])
@@ -121,7 +116,7 @@ if __name__ == '__main__':
                 pickle.dump(clf, open(os.path.join('models', str(count_folds) + model + str(Max_Words) + '_tdidf.dmp'), 'wb'))
 
                 t2 = time.time()
-                out_results.append([model, Max_Words, clf.cv_results_,os.path.join('models', str(count_folds) + model + str(Max_Words) + '_tdidf.dmp')])
+                out_results.append([model, Max_Words, clf.cv_results_,os.path.join('models', str(count_folds) + model + str(Max_Words) + '.dmp')])
         pickle.dump(out_results, open(os.path.join('models', 'results_tdidf.pk'), 'wb'))
 
     max_accuracy_model=np.argmax([max(x[2]['mean_test_accuracy']) for x in out_results])

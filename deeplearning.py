@@ -7,11 +7,6 @@ from gensim.models import Word2Vec
 
 from collections import Counter
 
-time_steps = 10
-batch_size = 3
-in_size = 10
-classes_no = 2
-
 from tools import split
 import config
 import time
@@ -106,7 +101,7 @@ class LSTMModel(nn.Module):
         # out.size() --> 100, 10
         return out
 
-
+in_size = 10
 
 X, X_test, y, y_test = split(config.base_path)
 
